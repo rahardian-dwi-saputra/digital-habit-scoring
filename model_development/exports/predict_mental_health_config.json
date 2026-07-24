@@ -1,0 +1,52 @@
+{
+  "feature_names_out": [
+    "ohe__Gender_Male",
+    "ohe__Most_Used_Platform_Instagram",
+    "ohe__Most_Used_Platform_KakaoTalk",
+    "ohe__Most_Used_Platform_LINE",
+    "ohe__Most_Used_Platform_LinkedIn",
+    "ohe__Most_Used_Platform_Snapchat",
+    "ohe__Most_Used_Platform_TikTok",
+    "ohe__Most_Used_Platform_Twitter",
+    "ohe__Most_Used_Platform_VKontakte",
+    "ohe__Most_Used_Platform_WeChat",
+    "ohe__Most_Used_Platform_WhatsApp",
+    "ohe__Most_Used_Platform_YouTube",
+    "scaler__Avg_Daily_Usage_Hours",
+    "scaler__Sleep_Hours_Per_Night"
+  ],
+  "numeric_features": {
+    "Avg_Daily_Usage_Hours": {
+      "mean": 5.0826979472140765,
+      "std": 1.682424167340713
+    },
+    "Sleep_Hours_Per_Night": {
+      "mean": 6.615102639296188,
+      "std": 1.2171697151855536
+    }
+  },
+  "categorical_features": {
+    "Gender": {
+      "dropped_category": "Female",
+      "encoded_categories": [
+        "Male"
+      ]
+    },
+    "Most_Used_Platform": {
+      "dropped_category": "Facebook",
+      "encoded_categories": [
+        "Instagram",
+        "KakaoTalk",
+        "LINE",
+        "LinkedIn",
+        "Snapchat",
+        "TikTok",
+        "Twitter",
+        "VKontakte",
+        "WeChat",
+        "WhatsApp",
+        "YouTube"
+      ]
+    }
+  }
+}

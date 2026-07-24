@@ -1,5 +1,8 @@
 import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
+import json
 import onnxmltools
 
 from xgboost import XGBRegressor
@@ -24,6 +27,111 @@ print("\nTotal nilai duplikat")
 print(df.duplicated().sum())
 print("\nData kosong di tiap kolom")
 print(df.isnull().sum())
+
+
+#Visualisasi Data
+# Boxplot untuk deteksi outlier
+columns = [
+    'Daily_Screen_Time(hrs)',
+    'Days_Without_Social_Media',
+    'Exercise_Frequency(week)',
+]
+
+fig, axes = plt.subplots(nrows=1, ncols=3, figsize=(12, 5))
+
+for idx, col in enumerate(columns):
+    sns.boxplot(
+        data=df,
+        x=col,
+        ax=axes[idx],
+        color='skyblue',
+        flierprops=dict(
+            marker='o', 
+            markerfacecolor='red', 
+            markersize=6
+        ),
+    )
+    axes[idx].set_title(
+        f'Boxplot\n{col}', 
+        fontsize=11, 
+        fontweight='bold'
+    )
+    axes[idx].set_xlabel(
+        col, 
+        fontsize=10
+    )
+
+plt.tight_layout()
+plt.show()
+
+# Grafik distribusi target
+happiness_counts = (
+    df['Happiness_Index(1-10)'].value_counts().sort_index().reset_index()
+)
+happiness_counts.columns = ['Happiness_Index', 'Jumlah']
+
+plt.figure(figsize=(10, 6))
+
+ax = sns.barplot(
+    data=happiness_counts,
+    x='Happiness_Index',
+    y='Jumlah',
+    hue='Happiness_Index',
+    legend=False,
+    palette='Blues_d',
+)
+
+for p in ax.patches:
+    height = p.get_height()
+    if height > 0:
+        ax.annotate(
+            f'{int(height)}',
+            (p.get_x() + p.get_width() / 2.0, height),
+            ha='center',
+            va='bottom',
+            fontsize=10,
+            fontweight='bold',
+            xytext=(0, 3),
+            textcoords='offset points',
+        )
+
+plt.title(
+    'Distribusi Frekuensi Happiness Index (1-10)', 
+    fontsize=14, 
+    fontweight='bold'
+)
+plt.xlabel('Happiness Index', fontsize=12)
+plt.ylabel('Jumlah (Frekuensi)', fontsize=12)
+
+plt.grid(axis='y', linestyle='--', alpha=0.5)
+plt.tight_layout()
+
+plt.show()
+
+# Headmat untu mengecek korelasi fitur
+numeric_cols = df.select_dtypes(include=["int64", "float64"]).columns
+corr_matrix = df[numeric_cols].corr()
+
+plt.figure(figsize=(7, 5))
+
+sns.heatmap(
+    corr_matrix,
+    annot=True,
+    cmap="coolwarm",
+    fmt=".2f",
+    linewidths=0.5,
+    annot_kws={"size": 10},  
+    cbar_kws={"shrink": 0.9},
+)
+
+plt.title(
+    "Heatmap Korelasi Variabel Numerik", 
+    fontweight="bold", 
+    fontsize=11
+)
+
+plt.tight_layout()
+plt.show()
 
 
 # Data splitting
@@ -60,6 +168,46 @@ X_test_scaled = preprocessor.transform(X_test)
 
 print(f"\nBentuk X_train setelah Preprocessing : {X_train_scaled.shape}")
 print(f"Ukuran X_test setelah Preprocessing  : {X_test_scaled.shape}")
+
+
+# Eksport konfigurasi fitur
+scaler_obj = preprocessor.named_transformers_["num"]
+num_info = {}
+for col_name, mean_val, std_val in zip(
+    num_cols, 
+    scaler_obj.mean_, 
+    scaler_obj.scale_
+):
+    num_info[col_name] = {
+        "mean": float(mean_val), 
+        "std": float(std_val)
+    }
+
+ohe_obj = preprocessor.named_transformers_["cat"]
+cat_info = {}
+for col_name, categories in zip(cat_cols, ohe_obj.categories_):
+    
+    dropped_cat = categories[0]
+    kept_categories = categories[1:].tolist()
+
+    cat_info[col_name] = {
+        "dropped_category": str(dropped_cat),
+        "encoded_categories": kept_categories,
+    }
+
+feature_names_out = preprocessor.get_feature_names_out().tolist()
+
+pipeline_config = {
+    "feature_names_out": feature_names_out,
+    "numeric_features": num_info,
+    "categorical_features": cat_info,
+}
+
+with open("exports/predict_happiness_config.json", "w") as f:
+    json.dump(pipeline_config, f, indent=2)
+
+print("\n[+] Berhasil menyimpan konfigurasi ke 'exports/predict_happiness_config.json'")
+print(f"[+] Total fitur hasil preprocessing: {len(feature_names_out)}")
 
 
 # Modelling

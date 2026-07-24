@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Digital Habit Scoring - Prediction Dashboard</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-9 col-lg-7">
+                <div class="card shadow-sm border-0 rounded-3">
+                    <div class="card-header bg-primary text-white text-center py-3">
+                        <h4 class="mb-0 fw-bold">Digital Habit & Scoring Assessment</h4>
+                    </div>
+                    <div class="card-body p-4">
+                        <form id="predictionForm">
+                            
+                            <!-- Gender -->
+                            <div class="mb-3">
+                                <label for="gender" class="form-label fw-semibold">Jenis Kelamin</label>
+                                <select class="form-select" id="gender" required>
+                                    <option value="" selected disabled>-- Pilih Jenis Kelamin --</option>
+                                    <option value="Female">Female</option>
+                                    <option value="Male">Male</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+
+                            <!-- Daily Screen Time -->
+                            <div class="mb-3">
+                                <label for="dailyScreenTime" class="form-label fw-semibold">Daily Screen Time / Media Usage (Jam/Hari)</label>
+                                <input type="number" step="0.1" class="form-control" id="dailyScreenTime" placeholder="Contoh: 5.5" min="0" max="24" required>
+                            </div>
+
+                            <!-- Sleep Hours Per Night -->
+                            <div class="mb-3">
+                                <label for="sleepHours" class="form-label fw-semibold">Durasi Tidur Per Malam (Jam)</label>
+                                <input type="number" step="0.1" class="form-control" id="sleepHours" placeholder="Contoh: 7.0" min="0" max="24" required>
+                            </div>
+
+                            <!-- Stress Level -->
+                            <div class="mb-3">
+                                <label for="stressLevel" class="form-label fw-semibold">Tingkat Stres (Skala 1 - 10)</label>
+                                <input type="number" step="0.5" class="form-control" id="stressLevel" placeholder="Contoh: 4.0" min="1" max="10" required>
+                            </div>
+
+                            <!-- Social Media Platform -->
+                            <div class="mb-4">
+                                <label for="platform" class="form-label fw-semibold">Platform Media Sosial Utama</label>
+                                <select class="form-select" id="platform" required>
+                                    <option value="" selected disabled>-- Pilih Platform --</option>
+                                    <option value="Facebook">Facebook</option>
+                                    <option value="Instagram">Instagram</option>
+                                    <option value="LinkedIn">LinkedIn</option>
+                                    <option value="TikTok">TikTok</option>
+                                    <option value="Twitter">Twitter / X</option>
+                                    <option value="YouTube">YouTube</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" id="btnSubmit">
+                                Hitung Prediksi
+                            </button>
+                        </form>
+
+                        <!-- Area Hasil Prediksi -->
+                        <div id="resultContainer" class="mt-4 d-none">
+                            <hr class="my-4">
+                            <h5 class="text-center fw-bold mb-3">Hasil Evaluasi</h5>
+                            <div class="row g-3">
+                                <!-- Model 1 Result -->
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-primary-subtle border border-primary rounded text-center">
+                                        <h6 class="text-muted mb-1">Happiness Index</h6>
+                                        <h3 class="fw-bold text-primary mb-0" id="happinessResult">0.00</h3>
+                                    </div>
+                                </div>
+                                <!-- Model 2 Result -->
+                                <div class="col-md-6">
+                                    <div class="p-3 bg-success-subtle border border-success rounded text-center">
+                                        <h6 class="text-muted mb-1">Mental Health Score</h6>
+                                        <h3 class="fw-bold text-success mb-0" id="mentalHealthResult">0.00</h3>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('predictionForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const btnSubmit = document.getElementById('btnSubmit');
+            const resultContainer = document.getElementById('resultContainer');
+            const happinessResult = document.getElementById('happinessResult');
+            const mentalHealthResult = document.getElementById('mentalHealthResult');
+
+            btnSubmit.disabled = true;
+            btnSubmit.innerText = 'Memproses...';
+
+            const payload = {
+                gender: document.getElementById('gender').value,
+                dailyScreenTime: document.getElementById('dailyScreenTime').value,
+                sleepHours: document.getElementById('sleepHours').value,
+                stressLevel: document.getElementById('stressLevel').value,
+                platform: document.getElementById('platform').value
+            };
+
+            try {
+                const response = await fetch('/api/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    happinessResult.innerText = data.results.happinessIndex.toFixed(2);
+                    mentalHealthResult.innerText = data.results.mentalHealthScore.toFixed(2);
+                    
+                    resultContainer.classList.remove('d-none');
+                } else {
+                    alert('Gagal memproses prediksi: ' + (data.error || 'Terjadi kesalahan pada server.'));
+                }
+            } catch (err) {
+                console.error('Fetch error:', err);
+                alert('Terjadi kesalahan koneksi! Pastikan server node app.js sedang berjalan.');
+            } finally {
+                btnSubmit.disabled = false;
+                btnSubmit.innerText = 'Hitung Prediksi';
+            }
+        });
+    </script>
+</body>
+</html>
