@@ -3,11 +3,16 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Digital Habit Scoring</title>
+  <title>Analisis Kesehatan Mental & Kebahagiaan</title>
   <!-- Bootstrap 5 CSS -->
   <link 
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" 
     rel="stylesheet"
+  />
+  <!-- Bootstrap Icons -->
+  <link 
+    rel="stylesheet" 
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css"
   />
 </head>
 <body class="bg-light">
@@ -16,13 +21,13 @@
     <div class="row justify-content-center">
       <div class="col-lg-8">
         
+        <!-- Form Card -->
         <div class="card shadow-sm border-0 mb-4">
           <div class="card-body p-4">
-            <h2 class="card-title text-center text-primary mb-3">Form Prediksi Mental Health</h2>
-            <p class="text-muted text-center mb-4">Isi form di bawah ini untuk mendapatkan estimasi skor dari 3 model ML secara bersamaan.</p>
+            <h2 class="card-title text-center text-primary mb-3">Form Prediksi Kesehatan & Kebahagiaan</h2>
+            <p class="text-muted text-center mb-4">Isi form di bawah ini untuk mendapatkan estimasi skor ML dan analisis personal dari Gemini AI.</p>
 
             <form id="predictionForm">
-              
               <div class="row g-3">
                 <!-- Gender -->
                 <div class="col-md-6">
@@ -40,7 +45,6 @@
                   <label for="platform" class="form-label fw-bold">Platform Utama</label>
                   <select class="form-select" id="platform" required>
                     <option value="" selected disabled>Pilih Platform</option>
-                    
                     <option value="Instagram">Instagram</option>
                     <option value="LinkedIn">LinkedIn</option>
                     <option value="TikTok">TikTok</option>
@@ -65,7 +69,6 @@
                 <!-- Tingkat Stress -->
                 <div class="col-md-6">
                   <label for="stressLevel" class="form-label fw-bold">Tingkat Stress (Skala 1-10)</label>
-                  
                   <select class="form-select" id="stressLevel" required>
                     <option value="" selected disabled>Pilih</option>
                     
@@ -91,20 +94,20 @@
 
               <div class="d-grid gap-2 mt-4">
                 <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
-                  Hitung Prediksi
+                  Hitung & Analisis
                 </button>
               </div>
-
             </form>
           </div>
         </div>
 
-        <!-- Section Hasil Prediksi -->
+        <!-- Section Hasil Prediksi & Penjelasan AI -->
         <div id="resultsCard" class="card shadow-sm border-0 d-none">
           <div class="card-body p-4">
             <h4 class="card-title text-center mb-4">Hasil Analisis Model</h4>
             
-            <div class="row text-center g-3">
+            <!-- Grid Skor Prediksi ML -->
+            <div class="row text-center g-3 mb-4">
               <!-- Happiness Index -->
               <div class="col-md-4">
                 <div class="p-3 border rounded bg-white">
@@ -130,6 +133,18 @@
               </div>
             </div>
 
+            <!-- Box Penjelasan dari Gemini AI -->
+            <div class="p-3 border rounded bg-light border-primary border-opacity-25">
+              <div class="d-flex align-items-center mb-2">
+                <i class="bi bi-robot text-primary fs-4 me-2"></i>
+                <h5 class="fw-bold text-primary mb-0">Analisis Personal & Rekomendasi (Gemini AI)</h5>
+              </div>
+              <hr class="mt-2 mb-3">
+              <div id="resExplanation" class="text-secondary lh-base" style="white-space: pre-line;">
+                Memuat penjelasan AI...
+              </div>
+            </div>
+
           </div>
         </div>
 
@@ -140,7 +155,7 @@
     </div>
   </div>
 
-  <!-- JavaScript Sederhana untuk Kirim Data -->
+  <!-- JavaScript Client-Side -->
   <script>
     const form = document.getElementById('predictionForm');
     const submitBtn = document.getElementById('submitBtn');
@@ -150,13 +165,16 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
-      // Reset Tampilan
+      // Reset UI state
       resultsCard.classList.add('d-none');
       errorAlert.classList.add('d-none');
       submitBtn.disabled = true;
-      submitBtn.innerText = 'Memproses...';
+      submitBtn.innerHTML = `
+        <span class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+        Memproses data & Gemini AI...
+      `;
 
-      // Mengambil Nilai Input
+      // Payload data input pengguna
       const payload = {
         gender: document.getElementById('gender').value,
         platform: document.getElementById('platform').value,
@@ -178,10 +196,13 @@
         const data = await response.json();
 
         if (data.success) {
-          // Format Angka Desimal Menjadi 2 Tempat Desimal
+          // Format angka desimal hasil prediksi ML
           document.getElementById('resHappiness').innerText = data.results.happinessIndex.toFixed(2);
           document.getElementById('resMentalHealth').innerText = data.results.mentalHealthScore.toFixed(2);
           document.getElementById('resAnxiety').innerText = data.results.anxietyScore.toFixed(2);
+          
+          // Tampilkan teks penjelasan dari Gemini AI
+          document.getElementById('resExplanation').innerText = data.explanation || 'Penjelasan AI tidak tersedia.';
           
           resultsCard.classList.remove('d-none');
         } else {
@@ -193,7 +214,7 @@
         errorAlert.classList.remove('d-none');
       } finally {
         submitBtn.disabled = false;
-        submitBtn.innerText = 'Hitung Prediksi';
+        submitBtn.innerText = 'Hitung & Analisis';
       }
     });
   </script>

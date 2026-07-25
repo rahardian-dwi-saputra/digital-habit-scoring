@@ -1,3 +1,3 @@
 model_development/venv/
 model_implement/node_modules/
-.env
+**/.env

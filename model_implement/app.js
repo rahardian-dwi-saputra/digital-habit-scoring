@@ -1,5 +1,10 @@
 require('dotenv').config();
 
+const { GoogleGenerativeAI } = require('@google/generative-ai');
+// Inisialisasi Gemini API
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+const aiModel = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
+
 const express = require('express');
 const ort = require('onnxruntime-node');
 const path = require('path');
@@ -38,6 +43,41 @@ async function initONNX() {
     }
 }
 initONNX();
+
+/**
+ * Helper untuk membuat penjelasan AI dari hasil skor ML
+ */
+async function generateExplanation(inputData, results) {
+  const prompt = `
+    Kamu adalah asisten/pakar kesehatan mental dan psikologi.
+    Seorang pengguna memasukkan data profil berikut:
+    - Jenis Kelamin: ${inputData.gender}
+    - Platform Utama: ${inputData.social_media_platform}
+    - Durasi Medsos: ${inputData.daily_social_media_hours} jam/hari
+    - Durasi Tidur: ${inputData.sleep_hours_per_night} jam/malam
+    - Tingkat Stress Saat Ini: ${inputData['stress_level(1-10)']}/10
+    - Aktivitas Fisik: ${inputData.physical_activity} jam/hari
+
+    Berdasarkan model Machine Learning kami, didapatkan skor sebagai berikut:
+    1. Happiness Index: ${results.happinessIndex.toFixed(2)}
+    2. Mental Health Score: ${results.mentalHealthScore.toFixed(2)}
+    3. Anxiety Score: ${results.anxietyScore.toFixed(2)}
+
+    Tugasmu:
+    Berikan penjelasan singkat (maksimal 3 paragraf) dalam Bahasa Indonesia yang ramah dan suportif:
+    1. Analisis hubungan antara kebiasaan pengguna (medsos/tidur/stress) dengan skor yang didapat.
+    2. Berikan 2-3 saran praktis dan positif yang bisa meningkatkan kondisi mereka.
+    Hindari bahasa medis yang terlalu kaku atau menakutkan.
+  `;
+
+  try {
+    const response = await aiModel.generateContent(prompt);
+    return response.response.text();
+  } catch (err) {
+    console.error('Error Generative AI:', err);
+    return 'Maaf, gagal memuat penjelasan otomatis AI saat ini.';
+  }
+}
 
 /**
  * Memetakan sleep_hours (jam) ke nilai sleep_quality (skala 1 - 10)
@@ -141,13 +181,18 @@ app.post('/api/predict', async (req, res) => {
             runSessionInference(session3, features3)
         ]);
 
+        const mlResults = {
+            happinessIndex: happinessResult,
+            mentalHealthScore: mentalHealthResult,
+            anxietyScore: anxietyResult
+        };
+
+        const aiExplanation = await generateExplanation(rawData, mlResults);
+
         return res.json({
             success: true,
-            results: {
-                happinessIndex: happinessResult,
-                mentalHealthScore: mentalHealthResult,
-                anxietyScore: anxietyResult
-            }
+            results: mlResults,
+            explanation: aiExplanation
         });
     } catch (error) {
         console.error('Error saat prediksi:', error);
