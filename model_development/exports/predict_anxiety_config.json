@@ -1,0 +1,46 @@
+{
+  "feature_names_out": [
+    "num__daily_social_media_hours",
+    "num__sleep_hours_per_night",
+    "num__physical_activity",
+    "num__stress_level(1-10)",
+    "cat__gender_male",
+    "cat__social_media_platform_Instagram",
+    "cat__social_media_platform_Other",
+    "cat__social_media_platform_TikTok"
+  ],
+  "numeric_features": {
+    "daily_social_media_hours": {
+      "mean": 4.4749,
+      "std": 2.018033693970445
+    },
+    "sleep_hours_per_night": {
+      "mean": 6.187,
+      "std": 1.0268549069854027
+    },
+    "physical_activity": {
+      "mean": 0.9926500000000001,
+      "std": 0.5840042615426706
+    },
+    "stress_level(1-10)": {
+      "mean": 5.613,
+      "std": 3.0315393779398607
+    }
+  },
+  "categorical_features": {
+    "gender": {
+      "dropped_category": "female",
+      "encoded_categories": [
+        "male"
+      ]
+    },
+    "social_media_platform": {
+      "dropped_category": "Both",
+      "encoded_categories": [
+        "Instagram",
+        "Other",
+        "TikTok"
+      ]
+    }
+  }
+}

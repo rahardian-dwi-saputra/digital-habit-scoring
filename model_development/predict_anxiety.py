@@ -6,47 +6,50 @@ import model_pipeline as pipe
 from xgboost import XGBRegressor
 
 # Data loading
-df = pd.read_csv('data/raw/Social_media_impact_on_life.csv')
+df = pd.read_csv('data/raw/Teen_Mental_Health_Dataset.csv')
 pipe.print_dataset_info(df)
 
 
 #Visualisasi Data
 # Boxplot untuk deteksi outlier
 cols = [
-    "Avg_Daily_Usage_Hours",
-    "Sleep_Hours_Per_Night",
+    "daily_social_media_hours",
+    "sleep_hours",
+    "screen_time_before_sleep",
+    "academic_performance",
+    "stress_level",
+    "anxiety_level",
 ]
 
-fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
+fig, axes = plt.subplots(nrows=2, ncols=3, figsize=(14, 7), dpi=80)
+
+axes = axes.flatten()
 
 for i, col in enumerate(cols):
     sns.boxplot(
-        data=df,
-        y=col,
-        ax=axes[i],
-        color="skyblue",
-        width=0.4,
-        flierprops=dict(
-            marker='o', 
-            markerfacecolor='red', 
-            markersize=6
-        ),
+        y=df[col], 
+        ax=axes[i], 
+        color="skyblue", 
+        width=0.4
     )
     axes[i].set_title(
-        f"Boxplot: {col}", 
-        fontsize=12, 
+        col, 
+        fontsize=10, 
         fontweight="bold"
     )
-    axes[i].set_ylabel(
-        "Nilai", 
-        fontsize=10
+    axes[i].set_ylabel("")
+    axes[i].grid(
+        axis="y", 
+        linestyle="--", 
+        alpha=0.5
     )
 
-plt.tight_layout()
+plt.tight_layout(pad=2.0)
 plt.show()
 
-# Grafik distribusi overall impact
-counts = df["Overall_Impact"].value_counts()
+# Grafik distribusi Depression Risk
+counts = df["depression_risk"].value_counts()
+
 fig, ax = plt.subplots(figsize=(8, 5))
 
 bars = ax.bar(
@@ -63,13 +66,14 @@ ax.bar_label(
     fontsize=10, 
     fontweight="bold"
 )
+
 ax.set_title(
-    "Distribusi Jumlah per Overall Impact", 
+    "Distribusi Jumlah per Depression Risk", 
     fontsize=14, 
     pad=15
 )
 ax.set_xlabel(
-    "Overall Impact", 
+    "Depression Risk", 
     fontsize=11
 )
 ax.set_ylabel(
@@ -81,51 +85,53 @@ ax.grid(
     linestyle="--", 
     alpha=0.5
 )
-
-ax.set_ylim(0, max(counts.values) * 1.15)
+ax.set_ylim(
+    0, 
+    max(counts.values) * 1.15
+)
 
 plt.tight_layout()
 plt.show()
-
 
 # Heatmap untuk mengecek korelasi fitur
 numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns
 corr_matrix = df[numeric_cols].corr()
 
-plt.figure(figsize=(10, 8), dpi=75)
-
-ax = sns.heatmap(
+plt.figure(figsize=(10, 7))
+sns.heatmap(
     corr_matrix, 
     annot=True, 
     cmap='coolwarm', 
     fmt='.2f', 
     linewidths=0.5,
-    cbar_kws={'shrink': 0.8},
-    annot_kws={'size': 9} 
+    annot_kws={"size": 9}
 )
 
-ax.set_xticklabels(ax.get_xticklabels(), fontsize=9)
-ax.set_yticklabels(ax.get_yticklabels(), fontsize=9)
-
-plt.xticks(rotation=45, ha='right')
-plt.tight_layout(pad=2.0) 
+plt.xticks(
+    rotation=45, 
+    ha='right', 
+    fontsize=9
+)
+plt.yticks(
+    rotation=0, 
+    fontsize=9
+)
 
 plt.title(
     'Heatmap Korelasi Variabel Numerik', 
     fontweight='bold', 
-    fontsize=12
+    pad=15
 )
+
+plt.tight_layout()
 plt.show()
 
-
-# Data splitting
 df_clean = df.drop(columns=[
-    'Student_ID',
-    'Age',
-    'Academic_Level',
-    'Country',
-    'Affects_Academic_Performance',
-    'Overall_Impact'
+    'age',
+    'screen_time_before_sleep',
+    'academic_performance',
+    'depression_risk',
+    'social_interaction_level'
 ])
 df_clean = pipe.standardize_dataframe(df_clean)
 
@@ -133,9 +139,9 @@ df_clean = pipe.standardize_dataframe(df_clean)
 # Data splitting
 X_train, X_test, y_train, y_test, preprocessor = pipe.split_and_preprocess_data(
     df=df_clean, 
-    target_column="mental_health_score",
-    export_json_path="exports/predict_mental_health_config.json",
-    export_csv_path="data/processed/mental_health_processed.csv",
+    target_column="anxiety_level",
+    export_json_path="exports/predict_anxiety_config.json",
+    export_csv_path="data/processed/anxiety_processed.csv",
 )
 
 print(f"\nBentuk X_train setelah Preprocessing : {X_train.shape}")
@@ -174,5 +180,5 @@ metrics = pipe.evaluate_regression_model(
 pipe.export_model_to_onnx(
     model=xgb_model,
     num_features=X_train.shape[1],
-    output_path="exports/predict_mental_health_model.onnx"
+    output_path="exports/predict_anxiety_model.onnx"
 )

@@ -1,38 +1,38 @@
 {
   "feature_names_out": [
-    "ohe__Gender_Male",
-    "ohe__Most_Used_Platform_Instagram",
-    "ohe__Most_Used_Platform_KakaoTalk",
-    "ohe__Most_Used_Platform_LINE",
-    "ohe__Most_Used_Platform_LinkedIn",
-    "ohe__Most_Used_Platform_Snapchat",
-    "ohe__Most_Used_Platform_TikTok",
-    "ohe__Most_Used_Platform_Twitter",
-    "ohe__Most_Used_Platform_VKontakte",
-    "ohe__Most_Used_Platform_WeChat",
-    "ohe__Most_Used_Platform_WhatsApp",
-    "ohe__Most_Used_Platform_YouTube",
-    "scaler__Avg_Daily_Usage_Hours",
-    "scaler__Sleep_Hours_Per_Night"
+    "num__daily_social_media_hours",
+    "num__sleep_hours_per_night",
+    "cat__gender_male",
+    "cat__social_media_platform_Instagram",
+    "cat__social_media_platform_KakaoTalk",
+    "cat__social_media_platform_LINE",
+    "cat__social_media_platform_LinkedIn",
+    "cat__social_media_platform_Snapchat",
+    "cat__social_media_platform_TikTok",
+    "cat__social_media_platform_VKontakte",
+    "cat__social_media_platform_WeChat",
+    "cat__social_media_platform_WhatsApp",
+    "cat__social_media_platform_X (Twitter)",
+    "cat__social_media_platform_YouTube"
   ],
   "numeric_features": {
-    "Avg_Daily_Usage_Hours": {
+    "daily_social_media_hours": {
       "mean": 5.0826979472140765,
       "std": 1.682424167340713
     },
-    "Sleep_Hours_Per_Night": {
+    "sleep_hours_per_night": {
       "mean": 6.615102639296188,
       "std": 1.2171697151855536
     }
   },
   "categorical_features": {
-    "Gender": {
-      "dropped_category": "Female",
+    "gender": {
+      "dropped_category": "female",
       "encoded_categories": [
-        "Male"
+        "male"
       ]
     },
-    "Most_Used_Platform": {
+    "social_media_platform": {
       "dropped_category": "Facebook",
       "encoded_categories": [
         "Instagram",
@@ -41,10 +41,10 @@
         "LinkedIn",
         "Snapchat",
         "TikTok",
-        "Twitter",
         "VKontakte",
         "WeChat",
         "WhatsApp",
+        "X (Twitter)",
         "YouTube"
       ]
     }

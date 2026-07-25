@@ -13,23 +13,34 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const EXPORTS_DIR = path.join(__dirname, '..', 'model_development', 'exports');
 
-// Model 1 (Happiness Index)
 const configPath1 = path.join(EXPORTS_DIR, 'predict_happiness_config.json');
-const modelPath1 = path.join(EXPORTS_DIR, 'predict_happiness_model.onnx');
-
-// Model 2 (Mental Health Score)
 const configPath2 = path.join(EXPORTS_DIR, 'predict_mental_health_config.json');
+const configPath3 = path.join(EXPORTS_DIR, 'predict_anxiety_config.json');
+
+const modelPath1 = path.join(EXPORTS_DIR, 'predict_happiness_model.onnx');
 const modelPath2 = path.join(EXPORTS_DIR, 'predict_mental_health_model.onnx');
+const modelPath3 = path.join(EXPORTS_DIR, 'predict_anxiety_model.onnx');
 
-const config1 = require(configPath1);
-const config2 = require(configPath2);
+const config1 = JSON.parse(fs.readFileSync(configPath1, 'utf-8'));
+const config2 = JSON.parse(fs.readFileSync(configPath2, 'utf-8'));
+const config3 = JSON.parse(fs.readFileSync(configPath3, 'utf-8'));
 
-function scaleValue(value, mean, std) {
-    return (value - mean) / std;
+let session1, session2, session3;
+
+async function initONNX() {
+    try {
+        session1 = await ort.InferenceSession.create(modelPath1);
+        session2 = await ort.InferenceSession.create(modelPath2);
+        session3 = await ort.InferenceSession.create(modelPath3);
+        console.log('Ketiga Model ONNX & Config berhasil dimuat!');
+    } catch (err) {
+        console.error('Gagal inisialisasi ONNX Session:', err);
+    }
 }
+initONNX();
 
 /**
- * Memetakan Sleep_Hours_Per_Night (jam) ke nilai Sleep_Quality (skala 1 - 10)
+ * Memetakan sleep_hours (jam) ke nilai sleep_quality (skala 1 - 10)
  */
 function mapSleepHoursToQuality(sleepHours) {
     if (sleepHours >= 7.0 && sleepHours <= 9.0) {
@@ -44,110 +55,46 @@ function mapSleepHoursToQuality(sleepHours) {
 }
 
 /**
- * Helper Preprocessing Input
+ * Preprocessor Dinamis berdasarkan Config JSON
  */
-function preprocessModel1(rawData) {
-    const scaledNumerics = {
-        'Daily_Screen_Time(hrs)': scaleValue(
-            rawData.dailyScreenTime,
-            config1.numeric_features['Daily_Screen_Time(hrs)'].mean,
-            config1.numeric_features['Daily_Screen_Time(hrs)'].std
-        ),
-        'Sleep_Quality(1-10)': scaleValue(
-            rawData.sleepQuality,
-            config1.numeric_features['Sleep_Quality(1-10)'].mean,
-            config1.numeric_features['Sleep_Quality(1-10)'].std
-        ),
-        'Stress_Level(1-10)': scaleValue(
-            rawData.stressLevel,
-            config1.numeric_features['Stress_Level(1-10)'].mean,
-            config1.numeric_features['Stress_Level(1-10)'].std
-        )
-    };
+function genericPreprocess(rawData, config) {
+    const processedData = {};
 
-    const genderCategories = config1.categorical_features.Gender.encoded_categories;
-    const genderOhe = {};
-    genderCategories.forEach(cat => {
-        genderOhe[cat] = (rawData.gender === cat) ? 1.0 : 0.0;
-    });
-
-    const platformCategories = config1.categorical_features.Social_Media_Platform.encoded_categories;
-    const platformOhe = {};
-    platformCategories.forEach(cat => {
-        platformOhe[cat] = (rawData.platform === cat) ? 1.0 : 0.0;
-    });
-
-    return config1.feature_names_out.map(featureName => {
-        if (featureName.startsWith('num__')) {
-            const key = featureName.replace('num__', '');
-            return scaledNumerics[key] ?? 0.0;
-        } 
-        if (featureName.startsWith('cat__Gender_')) {
-            const category = featureName.replace('cat__Gender_', '');
-            return genderOhe[category] ?? 0.0;
-        } 
-        if (featureName.startsWith('cat__Social_Media_Platform_')) {
-            const category = featureName.replace('cat__Social_Media_Platform_', '');
-            return platformOhe[category] ?? 0.0;
+    // Standard Scaling
+    if (config.numeric_features) {
+        for (const [colName, stats] of Object.entries(config.numeric_features)) {
+            const rawVal = Number(rawData[colName]) ?? 0;
+            const scaledVal = (rawVal - stats.mean) / stats.std;
+            processedData[`num__${colName}`] = scaledVal;
         }
-        return 0.0;
-    });
-}
+    }
 
-function preprocessModel2(rawData) {
-    const scaledNumerics = {
-        'Avg_Daily_Usage_Hours': scaleValue(
-            rawData.dailyScreenTime,
-            config2.numeric_features['Avg_Daily_Usage_Hours'].mean,
-            config2.numeric_features['Avg_Daily_Usage_Hours'].std
-        ),
-        'Sleep_Hours_Per_Night': scaleValue(
-            rawData.sleepHours,
-            config2.numeric_features['Sleep_Hours_Per_Night'].mean,
-            config2.numeric_features['Sleep_Hours_Per_Night'].std
-        )
-    };
+    // One-Hot Encoding
+    if (config.categorical_features) {
+        for (const [colName, catInfo] of Object.entries(config.categorical_features)) {
+            const userVal = String(rawData[colName] || '').trim();
 
-    const genderCategories = config2.categorical_features.Gender.encoded_categories;
-    const genderOhe = {};
-    genderCategories.forEach(cat => {
-        genderOhe[cat] = (rawData.gender === cat) ? 1.0 : 0.0;
-    });
-
-    const platformCategories = config2.categorical_features.Most_Used_Platform.encoded_categories;
-    const platformOhe = {};
-    platformCategories.forEach(cat => {
-        platformOhe[cat] = (rawData.platform === cat) ? 1.0 : 0.0;
-    });
-
-    return config2.feature_names_out.map(featureName => {
-        if (featureName.startsWith('scaler__')) {
-            const key = featureName.replace('scaler__', '');
-            return scaledNumerics[key] ?? 0.0;
-        } 
-        if (featureName.startsWith('ohe__Gender_')) {
-            const category = featureName.replace('ohe__Gender_', '');
-            return genderOhe[category] ?? 0.0;
-        } 
-        if (featureName.startsWith('ohe__Most_Used_Platform_')) {
-            const category = featureName.replace('ohe__Most_Used_Platform_', '');
-            return platformOhe[category] ?? 0.0;
+            catInfo.encoded_categories.forEach((category) => {
+                const featureKey = `cat__${colName}_${category}`;
+                processedData[featureKey] = (userVal === category) ? 1.0 : 0.0;
+            });
         }
-        return 0.0;
-    });
+    }
+
+    // Mengurutkan vektor sesuai `feature_names_out`
+    return config.feature_names_out.map(
+        (featureName) => processedData[featureName] ?? 0.0
+    );
 }
 
 /**
- * Fungsi Inferensi ONNX
+ * Helper Inferensi ONNX
  */
-async function runModelInference(modelPath, featureVector) {
-    const session = await ort.InferenceSession.create(modelPath);
-    const numFeatures = featureVector.length;
-
+async function runSessionInference(session, featureVector) {
     const inputTensor = new ort.Tensor(
         'float32',
         Float32Array.from(featureVector),
-        [1, numFeatures]
+        [1, featureVector.length]
     );
 
     const inputName = session.inputNames[0];
@@ -159,40 +106,52 @@ async function runModelInference(modelPath, featureVector) {
     return results[outputName].data[0];
 }
 
+// Endpoint Prediksi
 app.post('/api/predict', async (req, res) => {
     try {
-        const sleepHours = parseFloat(req.body.sleepHours);
+        if (!session1 || !session2 || !session3) {
+            return res.status(503).json({ 
+                success: false, 
+                error: 'Model ONNX belum siap, silakan coba beberapa saat lagi.' 
+            });
+        }
+
+        const sleepHours = parseFloat(req.body.sleepHours || req.body.sleep_hours_per_night || 0);
         const mappedSleepQuality = mapSleepHoursToQuality(sleepHours);
 
         const rawData = {
+            daily_social_media_hours: parseFloat(req.body.dailyScreenTime || req.body.daily_social_media_hours || 0),
+            'sleep_quality(1-10)': mappedSleepQuality,
+            'stress_level(1-10)': parseFloat(req.body.stressLevel || req.body['stress_level(1-10)'] || 0),
+            sleep_hours_per_night: sleepHours,
+            physical_activity: parseFloat(req.body.physicalActivity || req.body.physical_activity || 0),
             gender: req.body.gender,
-            dailyScreenTime: parseFloat(req.body.dailyScreenTime),
-            sleepQuality: mappedSleepQuality,
-            sleepHours: parseFloat(req.body.sleepHours),
-            stressLevel: parseFloat(req.body.stressLevel),
-            platform: req.body.platform
+            social_media_platform: req.body.platform || req.body.social_media_platform
         };
 
-        // Preprocessing
-        const features1 = preprocessModel1(rawData);
-        const features2 = preprocessModel2(rawData);
+        // Preprocessing Vektor Fitur
+        const features1 = genericPreprocess(rawData, config1);
+        const features2 = genericPreprocess(rawData, config2);
+        const features3 = genericPreprocess(rawData, config3);
 
-        // Jalankan Prediksi Kedua Model secara Paralel
-        const [happinessResult, mentalHealthResult] = await Promise.all([
-            runModelInference(modelPath1, features1),
-            runModelInference(modelPath2, features2)
+        // Menjalankan Prediksi Ketiga Model secara Paralel
+        const [happinessResult, mentalHealthResult, anxietyResult] = await Promise.all([
+            runSessionInference(session1, features1),
+            runSessionInference(session2, features2),
+            runSessionInference(session3, features3)
         ]);
 
-        res.json({
+        return res.json({
             success: true,
             results: {
                 happinessIndex: happinessResult,
-                mentalHealthScore: mentalHealthResult
+                mentalHealthScore: mentalHealthResult,
+                anxietyScore: anxietyResult
             }
         });
     } catch (error) {
         console.error('Error saat prediksi:', error);
-        res.status(500).json({ success: false, error: error.message });
+        return res.status(500).json({ success: false, error: error.message });
     }
 });
 

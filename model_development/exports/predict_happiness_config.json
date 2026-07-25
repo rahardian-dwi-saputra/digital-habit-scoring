@@ -1,39 +1,39 @@
 {
   "feature_names_out": [
-    "num__Daily_Screen_Time(hrs)",
-    "num__Sleep_Quality(1-10)",
-    "num__Stress_Level(1-10)",
-    "cat__Gender_Male",
-    "cat__Gender_Other",
-    "cat__Social_Media_Platform_Instagram",
-    "cat__Social_Media_Platform_LinkedIn",
-    "cat__Social_Media_Platform_TikTok",
-    "cat__Social_Media_Platform_X (Twitter)",
-    "cat__Social_Media_Platform_YouTube"
+    "num__daily_social_media_hours",
+    "num__sleep_quality(1-10)",
+    "num__stress_level(1-10)",
+    "cat__gender_male",
+    "cat__gender_other",
+    "cat__social_media_platform_Instagram",
+    "cat__social_media_platform_LinkedIn",
+    "cat__social_media_platform_TikTok",
+    "cat__social_media_platform_X (Twitter)",
+    "cat__social_media_platform_YouTube"
   ],
   "numeric_features": {
-    "Daily_Screen_Time(hrs)": {
+    "daily_social_media_hours": {
       "mean": 5.539249999999999,
       "std": 1.7182358503709552
     },
-    "Sleep_Quality(1-10)": {
+    "sleep_quality(1-10)": {
       "mean": 6.305,
       "std": 1.549830635908324
     },
-    "Stress_Level(1-10)": {
+    "stress_level(1-10)": {
       "mean": 6.6375,
       "std": 1.5382112176160985
     }
   },
   "categorical_features": {
-    "Gender": {
-      "dropped_category": "Female",
+    "gender": {
+      "dropped_category": "female",
       "encoded_categories": [
-        "Male",
-        "Other"
+        "male",
+        "other"
       ]
     },
-    "Social_Media_Platform": {
+    "social_media_platform": {
       "dropped_category": "Facebook",
       "encoded_categories": [
         "Instagram",
