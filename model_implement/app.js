@@ -58,16 +58,25 @@ async function generateExplanation(inputData, results) {
     - Tingkat Stress Saat Ini: ${inputData['stress_level(1-10)']}/10
     - Aktivitas Fisik: ${inputData.physical_activity} jam/hari
 
-    Berdasarkan model Machine Learning kami, didapatkan skor sebagai berikut:
-    1. Happiness Index: ${results.happinessIndex.toFixed(2)}
-    2. Mental Health Score: ${results.mentalHealthScore.toFixed(2)}
-    3. Anxiety Score: ${results.anxietyScore.toFixed(2)}
+    Berdasarkan model Machine Learning kami, didapatkan skor indikator psikologis dengan rentang skala 1 hingga 10 (1 = paling rendah/buruk, 10 = paling tinggi/baik):
+
+    1. Happiness Index: ${results.happinessIndex.toFixed(2)} / 10
+    2. Mental Health Score: ${results.mentalHealthScore.toFixed(2)} / 10
+    3. Anxiety Score: ${results.anxietyScore.toFixed(2)} / 10
+
+    Catatan konteks skala untuk analisis:
+    - Happiness Index: Nilai 1 (sangat tidak bahagia) hingga 10 (sangat bahagia).
+    - Mental Health Score: Nilai 1 (kesehatan mental sangat buruk) hingga 10 (kesehatan mental sangat baik).
+    - Anxiety Score: Nilai 1 (tingkat kecemasan sangat rendah/tenang) hingga 10 (tingkat kecemasan sangat tinggi/kritis).
 
     Tugasmu:
-    Berikan penjelasan singkat (maksimal 3 paragraf) dalam Bahasa Indonesia yang ramah dan suportif:
-    1. Analisis hubungan antara kebiasaan pengguna (medsos/tidur/stress) dengan skor yang didapat.
-    2. Berikan 2-3 saran praktis dan positif yang bisa meningkatkan kondisi mereka.
-    Hindari bahasa medis yang terlalu kaku atau menakutkan.
+    Berikan penjelasan singkat (maksimal 3 paragraf) dalam Bahasa Indonesia yang ramah, empati, dan suportif:
+    1. Analisis hubungan antara kebiasaan pengguna (medsos, tidur, aktivitas fisik, dan stres) dengan skor ML yang didapatkan.
+    2. Berikan 2-3 saran praktis dan positif yang realistis untuk membantu meningkatkan kondisi mereka.
+
+    Aturan Penulisan:
+    - Hindari bahasa medis yang terlalu kaku, klinis, atau menakutkan.
+    - Gunakan nada bicara yang merangkul dan tidak menghakimi.
   `;
 
   try {
@@ -80,18 +89,38 @@ async function generateExplanation(inputData, results) {
 }
 
 /**
- * Memetakan sleep_hours (jam) ke nilai sleep_quality (skala 1 - 10)
+ * Memetakan durasi tidur (jam) ke skala kualitas tidur (1 - 10).
+ * 
+ * Logic Pemetaan:
+ * - Titik ideal: 7 - 9 jam -> Nilai 10
+ * - Kurang tidur: Menurun 1.5 poin per jam di bawah 7 jam
+ * - Kelebihan tidur: Menurun 1.0 poin per jam di atas 9 jam
+ * 
+ * @param {number} sleepHours - Jumlah jam tidur (bisa desimal, misal: 6.5)
+ * @returns {number} Nilai kualitas tidur (Integer 1 - 10)
  */
 function mapSleepHoursToQuality(sleepHours) {
-    if (sleepHours >= 7.0 && sleepHours <= 9.0) {
-        return 10.0;
-    } else if (sleepHours < 7.0) {
-        const score = 1.0 + (sleepHours / 7.0) * 9.0;
-        return Math.max(1.0, Math.min(10.0, score));
-    } else {
-        const score = 10.0 - ((sleepHours - 9.0) / 5.0) * 9.0;
-        return Math.max(1.0, Math.min(10.0, score));
+    const hours = parseFloat(sleepHours);
+    if (isNaN(hours) || hours <= 0) {
+        return 1;
     }
+
+    let quality;
+
+    if (hours >= 7 && hours <= 9) {  // Rentang ideal (7 - 9 jam)
+        quality = 10;
+    } else if (hours < 7) { // Kurang dari 7 jam
+        quality = 10 - (7 - hours) * 1.5;
+    } else { // Lebih dari 9 jam
+        quality = 10 - (hours - 9) * 1.0;
+    }
+
+    let roundedQuality = Math.round(quality);
+
+    if (roundedQuality > 10) roundedQuality = 10;
+    if (roundedQuality < 1) roundedQuality = 1;
+
+    return roundedQuality;
 }
 
 /**
@@ -156,24 +185,30 @@ app.post('/api/predict', async (req, res) => {
             });
         }
 
-        const sleepHours = parseFloat(req.body.sleepHours || req.body.sleep_hours_per_night || 0);
+        const sleepHours = parseFloat(req.body.sleepHours || 0);
         const mappedSleepQuality = mapSleepHoursToQuality(sleepHours);
 
         const rawData = {
-            daily_social_media_hours: parseFloat(req.body.dailyScreenTime || req.body.daily_social_media_hours || 0),
+            daily_social_media_hours: parseFloat(req.body.dailySocialMediaHours || 0),
             'sleep_quality(1-10)': mappedSleepQuality,
-            'stress_level(1-10)': parseFloat(req.body.stressLevel || req.body['stress_level(1-10)'] || 0),
+            'stress_level(1-10)': parseFloat(req.body.stressLevel || 0),
             sleep_hours_per_night: sleepHours,
-            physical_activity: parseFloat(req.body.physicalActivity || req.body.physical_activity || 0),
+            physical_activity: parseFloat(req.body.physicalActivity || 0),
             gender: req.body.gender,
-            social_media_platform: req.body.platform || req.body.social_media_platform
+            social_media_platform: req.body.platform
         };
 
         // Preprocessing Vektor Fitur
         const features1 = genericPreprocess(rawData, config1);
         const features2 = genericPreprocess(rawData, config2);
-        const features3 = genericPreprocess(rawData, config3);
 
+        const rawDataModel3 = { ...rawData };
+        if (!['Instagram', 'TikTok'].includes(rawDataModel3.social_media_platform)) {
+            rawDataModel3.social_media_platform = 'Other';
+        }
+        
+        const features3 = genericPreprocess(rawDataModel3, config3);
+        
         // Menjalankan Prediksi Ketiga Model secara Paralel
         const [happinessResult, mentalHealthResult, anxietyResult] = await Promise.all([
             runSessionInference(session1, features1),
@@ -181,10 +216,12 @@ app.post('/api/predict', async (req, res) => {
             runSessionInference(session3, features3)
         ]);
 
+        const clamp = (num) => Math.min(Math.max(num, 1), 10);
+
         const mlResults = {
-            happinessIndex: happinessResult,
-            mentalHealthScore: mentalHealthResult,
-            anxietyScore: anxietyResult
+            happinessIndex: clamp(happinessResult),
+            mentalHealthScore: clamp(mentalHealthResult),
+            anxietyScore: clamp(anxietyResult)
         };
 
         const aiExplanation = await generateExplanation(rawData, mlResults);
