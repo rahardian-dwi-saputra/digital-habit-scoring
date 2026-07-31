@@ -3,7 +3,7 @@
 
 ## 🇮🇩 Bahasa Indonesia
 
-### Pernyataan Masalah
+### 1. Pernyataan Masalah
 Penggunaan media sosial yang tinggi sering kali berdampak signifikan terhadap kesejahteraan mental dan tingkat kebahagiaan seseorang. Namun, banyak individu yang tidak menyadari bagaimana kebiasaan harian—seperti durasi layar (*screen time*), pola tidur, tingkat stres, dan aktivitas fisik—secara akumulatif memicu kecemasan (*anxiety*) atau menurunkan tingkat kebahagiaan (*happiness index*). Tanpa adanya alat evaluasi mandiri yang dapat diakses dengan mudah, sulit bagi masyarakat awam untuk mendapatkan gambaran awal serta analisis personal mengenai kondisi kesehatan mental dan kebiasaan digital mereka.
 
 ### 2. Deskripsi Solusi
