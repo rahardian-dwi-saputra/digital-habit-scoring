@@ -75,10 +75,79 @@ In addition, IBM Bob contributed to the development of the frontend interface, t
 
 ## 📂 Struktur Proyek
 
-| Direktori | Deskripsi |
-| :--- | :--- |
-| `model_development` | Berisi seluruh kode Python untuk *data preprocessing*, pelatihan model, hingga ekspor ke format ONNX. |
-| `model_implement` | Berisi aplikasi backend Node.js (Express) & antarmuka web untuk mengimplementasikan hasil prediksi. |
+```
+digital-habit-scoring/
+│
+├── model_development/                        # Pipeline Machine Learning (Python)
+│   ├── data/
+│   │   ├── raw/                              # Dataset mentah (CSV)
+│   │   │   ├── Mental_Health_and_Social_Media_Balance_Dataset.csv
+│   │   │   ├── Social_media_impact_on_life.csv
+│   │   │   └── Teen_Mental_Health_Dataset.csv
+│   │   └── processed/                        # Dataset hasil preprocessing (CSV)
+│   │       ├── happiness_processed.csv
+│   │       ├── mental_health_processed.csv
+│   │       └── anxiety_processed.csv
+│   │
+│   ├── exports/                              # Artefak model yang diekspor
+│   │   ├── predict_happiness_model.onnx      # Model XGBoost → Happiness Index
+│   │   ├── predict_happiness_config.json     # Konfigurasi preprocessor (scaler + OHE)
+│   │   ├── predict_mental_health_model.onnx  # Model XGBoost → Mental Health Score
+│   │   ├── predict_mental_health_config.json
+│   │   ├── predict_anxiety_model.onnx        # Model XGBoost → Anxiety Score
+│   │   └── predict_anxiety_config.json
+│   │
+│   ├── model_pipeline.py                     # Fungsi utilitas pipeline (preprocessing, evaluasi, ekspor ONNX)
+│   ├── predict_happiness.py                  # Training & ekspor model Happiness Index
+│   ├── predict_mental_health.py              # Training & ekspor model Mental Health Score
+│   ├── predict_anxiety.py                    # Training & ekspor model Anxiety Score
+│   └── requirements.txt                      # Dependensi Python (scikit-learn, xgboost, onnxmltools, dll.)
+│
+└── model_implement/                          # Aplikasi Web Node.js (Express)
+    ├── config/
+    │   ├── env.js                            # Loader environment variable (.env)
+    │   ├── ibm.js                            # Konfigurasi IBM Granite API
+    │   └── onnx.js                           # Inisialisasi & manajemen sesi ONNX Runtime
+    │
+    ├── constants/
+    │   └── models.js                         # Path ke file .onnx dan .json
+    │
+    ├── controllers/
+    │   └── predict.controller.js             # Handler HTTP request prediksi
+    │
+    ├── middleware/
+    │   ├── validator.js                      # Validasi input request
+    │   └── errorHandler.js                   # Global error handler
+    │
+    ├── models/
+    │   ├── happiness.js                      # Loader config model Happiness
+    │   ├── mentalHealth.js                   # Loader config model Mental Health
+    │   └── anxiety.js                        # Loader config model Anxiety
+    │
+    ├── routes/
+    │   └── predict.routes.js                 # Definisi route POST /api/predict
+    │
+    ├── services/
+    │   ├── prediction.service.js             # Orkestrasi preprocessing + inferensi ONNX
+    │   ├── ai.service.js                     # Fasad pemanggilan IBM Granite AI
+    │   ├── prompt.service.js                 # Pembentukan prompt terstruktur
+    │   └── watson.service.js                 # HTTP client ke IBM Granite API
+    │
+    ├── utils/
+    │   ├── preprocess.js                     # StandardScaler + OneHotEncoder dinamis
+    │   ├── inference.js                      # Eksekusi inferensi ONNX Runtime
+    │   ├── sleepMapper.js                    # Konversi jam tidur → skor kualitas (1–10)
+    │   ├── clamp.js                          # Pembatas nilai skor ke rentang 1–10
+    │   └── loadJson.js                       # Loader file JSON konfigurasi
+    │
+    ├── public/
+    │   └── index.html                        # Antarmuka web (frontend)
+    │
+    ├── app.js                                # Konfigurasi Express (middleware & routing)
+    ├── server.js                             # Entry point — menjalankan HTTP server
+    ├── package.json                          # Dependensi Node.js
+    └── .env.example                          # Template environment variable
+```
 
 ---
 
