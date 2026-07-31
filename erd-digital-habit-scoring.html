@@ -1,0 +1,546 @@
+
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<title>ERD – Digital Habit Scoring</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    background: #ffffff;
+    color: #1f2328;
+    padding: 32px 20px 48px;
+  }
+  h1 {
+    text-align: center;
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    color: #1f2328;
+  }
+  .subtitle {
+    text-align: center;
+    color: #57606a;
+    font-size: 13px;
+    margin-bottom: 32px;
+  }
+
+  /* ---- canvas ---- */
+  .canvas {
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* ---- Entity card ---- */
+  .entity {
+    position: absolute;
+    background: #f7f8fa;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    min-width: 210px;
+    box-shadow: none;
+    overflow: hidden;
+  }
+  .entity-header {
+    background: #3b82d4;
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 7px 12px;
+    letter-spacing: 0.3px;
+  }
+  .entity-header.green  { background: #22863a; }
+  .entity-header.purple { background: #7c5cd8; }
+  .entity-header.teal   { background: #1f8490; }
+  .entity-header.orange { background: #b35a00; }
+  .entity-header.red    { background: #cb2431; }
+  .entity-header.slate  { background: #57606a; }
+
+  .entity table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+  }
+  .entity table tr:nth-child(even) { background: #f0f1f3; }
+  .entity table td {
+    padding: 4px 10px;
+    vertical-align: middle;
+    color: #1f2328;
+  }
+  .entity table td:first-child { width: 22px; text-align: center; }
+  .entity table td:last-child   { color: #57606a; font-style: italic; font-size: 11.5px; text-align: right; padding-right: 10px; }
+  .pk  { color: #e36209; font-weight: 700; font-size: 10px; }
+  .fk  { color: #3b82d4; font-weight: 700; font-size: 10px; }
+  .icon { font-size: 10px; }
+
+  /* ---- SVG lines ---- */
+  svg.lines {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    overflow: visible;
+  }
+  .line { stroke: #b0b8c4; stroke-width: 1.5; fill: none; }
+  .line-dashed { stroke: #b0b8c4; stroke-width: 1.5; fill: none; stroke-dasharray: 5 3; }
+
+  /* ---- Legend ---- */
+  .legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    justify-content: center;
+    margin-top: 16px;
+    font-size: 12.5px;
+    color: #57606a;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-box  { width: 14px; height: 14px; border-radius: 3px; flex-shrink: 0; }
+
+  /* ---- Section labels ---- */
+  .zone-label {
+    position: absolute;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: #57606a;
+    background: #fff;
+    padding: 0 6px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 4px;
+  }
+
+  /* ---- Cardinality markers ---- */
+  .card { font-size: 11px; fill: #57606a; font-family: inherit; }
+
+  /* ---- Flow arrows ---- */
+  .arrow { stroke: #3b82d4; stroke-width: 1.8; fill: none; }
+  .arrow-dashed { stroke: #7c5cd8; stroke-width: 1.8; fill: none; stroke-dasharray: 5 3; }
+
+  /* canvas height placeholder */
+  .canvas-spacer { height: 1020px; }
+
+  /* ---- Info panels ---- */
+  .info-section {
+    max-width: 1100px;
+    margin: 36px auto 0;
+  }
+  .info-section h2 {
+    font-size: 15px;
+    font-weight: 700;
+    border-bottom: 1.5px solid #e5e7eb;
+    padding-bottom: 6px;
+    margin-bottom: 14px;
+    color: #1f2328;
+  }
+  .info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    gap: 14px;
+  }
+  .info-card {
+    background: #f7f8fa;
+    border: 1px solid #e5e7eb;
+    border-radius: 6px;
+    padding: 12px 14px;
+  }
+  .info-card h3 { font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+  .info-card p, .info-card ul { font-size: 12.5px; color: #57606a; }
+  .info-card ul { padding-left: 16px; }
+  .tag {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: #e8f0fb;
+    color: #3b82d4;
+    font-weight: 600;
+    margin-right: 2px;
+  }
+  .tag.green  { background: #dcf2e4; color: #22863a; }
+  .tag.purple { background: #ede9f8; color: #7c5cd8; }
+  .tag.orange { background: #fef0e0; color: #b35a00; }
+
+  footer {
+    text-align: center;
+    font-size: 12px;
+    color: #8c959f;
+    border-top: 1px solid #e5e7eb;
+    padding-top: 14px;
+    margin-top: 36px;
+  }
+</style>
+</head>
+<body>
+
+<h1>Entity-Relationship Diagram</h1>
+<p class="subtitle">Digital Habit Scoring — Prediksi Kebahagiaan &amp; Kesehatan Mental Berdasarkan Penggunaan Media Sosial</p>
+
+<div class="canvas" id="canvas">
+  <div class="canvas-spacer"></div>
+
+  
+  <div class="entity" id="e-user" style="left:16px;top:30px;min-width:230px">
+    <div class="entity-header">UserInput</div>
+    <table>
+      <tr><td><span class="pk">PK</span></td><td>session_id</td><td>string (UUID)</td></tr>
+      <tr><td></td><td>gender</td><td>enum (male / female)</td></tr>
+      <tr><td></td><td>platform</td><td>enum (social media)</td></tr>
+      <tr><td></td><td>dailySocialMediaHours</td><td>float (jam/hari)</td></tr>
+      <tr><td></td><td>sleepHours</td><td>float (jam/malam)</td></tr>
+      <tr><td></td><td>stressLevel</td><td>int 1–10</td></tr>
+      <tr><td></td><td>physicalActivity</td><td>float (jam/hari)</td></tr>
+    </table>
+  </div>
+
+  
+  <div class="entity" id="e-sleep" style="left:16px;top:290px;min-width:230px">
+    <div class="entity-header teal">SleepQualityMapping</div>
+    <table>
+      <tr><td><span class="pk">PK</span></td><td>sleepHours</td><td>float (jam)</td></tr>
+      <tr><td></td><td>sleepQuality</td><td>int 1–10 (computed)</td></tr>
+      <tr><td></td><td>rule_ideal_min</td><td>7.0</td></tr>
+      <tr><td></td><td>rule_ideal_max</td><td>9.0</td></tr>
+      <tr><td></td><td>penalty_under</td><td>1.5 / jam</td></tr>
+      <tr><td></td><td>penalty_over</td><td>1.0 / jam</td></tr>
+    </table>
+  </div>
+
+  
+  <div class="entity" id="e-raw" style="left:320px;top:140px;min-width:270px">
+    <div class="entity-header slate">RawData (internal)</div>
+    <table>
+      <tr><td><span class="fk">FK</span></td><td>session_id</td><td>→ UserInput</td></tr>
+      <tr><td></td><td>daily_social_media_hours</td><td>float</td></tr>
+      <tr><td></td><td>sleep_quality(1-10)</td><td>int (dari Mapping)</td></tr>
+      <tr><td></td><td>stress_level(1-10)</td><td>int</td></tr>
+      <tr><td></td><td>sleep_hours_per_night</td><td>float</td></tr>
+      <tr><td></td><td>physical_activity</td><td>float</td></tr>
+      <tr><td></td><td>gender</td><td>enum</td></tr>
+      <tr><td></td><td>social_media_platform</td><td>enum</td></tr>
+    </table>
+  </div>
+
+  
+  <div class="entity" id="e-cfg" style="left:660px;top:30px;min-width:260px">
+    <div class="entity-header orange">PreprocessorConfig (JSON)</div>
+    <table>
+      <tr><td><span class="pk">PK</span></td><td>model_type</td><td>happiness / mental / anxiety</td></tr>
+      <tr><td></td><td>numeric_features</td><td>{ col: {mean, std} }</td></tr>
+      <tr><td></td><td>categorical_features</td><td>{ col: {dropped, encoded} }</td></tr>
+      <tr><td></td><td>feature_names_out</td><td>string[ ] (ordered)</td></tr>
+    </table>
+  </div>
+
+  
+  <div class="entity" id="e-feat" style="left:660px;top:270px;min-width:260px">
+    <div class="entity-header slate">FeatureVector (runtime)</div>
+    <table>
+      <tr><td><span class="fk">FK</span></td><td>session_id</td><td>→ RawData</td></tr>
+      <tr><td><span class="fk">FK</span></td><td>model_type</td><td>→ PreprocessorConfig</td></tr>
+      <tr><td></td><td>scaled_numeric[ ]</td><td>float[ ] StandardScaler</td></tr>
+      <tr><td></td><td>onehot_categorical[ ]</td><td>float[ ] OHE</td></tr>
+      <tr><td></td><td>vector</td><td>Float32Array (ordered)</td></tr>
+    </table>
+  </div>
+
+  
+  <div class="entity" id="e-onnx" style="left:320px;top:490px;min-width:240px">
+    <div class="entity-header purple">ONNXModel</div>
+    <table>
+      <tr><td><span class="pk">PK</span></td><td>model_type</td><td>happiness / mental / anxiety</td></tr>
+      <tr><td></td><td>file_path</td><td>.onnx</td></tr>
+      <tr><td></td><td>algorithm</td><td>XGBoost Regressor</td></tr>
+      <tr><td></td><td>n_estimators</td><td>100</td></tr>
+      <tr><td></td><td>learning_rate</td><td>0.05</td></tr>
+      <tr><td></td><td>max_depth</td><td>3</td></tr>
+      <tr><td></td><td>inputNames[0]</td><td>string</td></tr>
+      <tr><td></td><td>outputNames[0]</td><td>string</td></tr>
+    </table>
+  </div>
+
+  
+  <div class="entity" id="e-pred" style="left:660px;top:530px;min-width:260px">
+    <div class="entity-header green">PredictionResult</div>
+    <table>
+      <tr><td><span class="fk">FK</span></td><td>session_id</td><td>→ UserInput</td></tr>
+      <tr><td></td><td>happinessIndex</td><td>float 1–10 (clamped)</td></tr>
+      <tr><td></td><td>mentalHealthScore</td><td>float 1–10 (clamped)</td></tr>
+      <tr><td></td><td>anxietyScore</td><td>float 1–10 (clamped)</td></tr>
+    </table>
+  </div>
+
+  
+  <div class="entity" id="e-ibm" style="left:16px;top:600px;min-width:230px">
+    <div class="entity-header red">IBMGraniteConfig</div>
+    <table>
+      <tr><td></td><td>model_id</td><td>ibm/granite-*</td></tr>
+      <tr><td></td><td>region</td><td>us-south</td></tr>
+      <tr><td></td><td>project_id</td><td>string (env)</td></tr>
+      <tr><td></td><td>api_key</td><td>string (env)</td></tr>
+      <tr><td></td><td>max_tokens</td><td>600</td></tr>
+      <tr><td></td><td>temperature</td><td>0.4</td></tr>
+      <tr><td></td><td>top_p</td><td>0.9</td></tr>
+    </table>
+  </div>
+
+  
+  <div class="entity" id="e-prompt" style="left:320px;top:720px;min-width:270px">
+    <div class="entity-header red">Prompt</div>
+    <table>
+      <tr><td><span class="fk">FK</span></td><td>session_id</td><td>→ UserInput</td></tr>
+      <tr><td></td><td>gender</td><td>dari RawData</td></tr>
+      <tr><td></td><td>platform</td><td>dari RawData</td></tr>
+      <tr><td></td><td>socialMediaHours</td><td>dari RawData</td></tr>
+      <tr><td></td><td>sleepHours</td><td>dari RawData</td></tr>
+      <tr><td></td><td>stressLevel</td><td>dari RawData</td></tr>
+      <tr><td></td><td>physicalActivity</td><td>dari RawData</td></tr>
+      <tr><td></td><td>happinessIndex</td><td>dari PredictionResult</td></tr>
+      <tr><td></td><td>mentalHealthScore</td><td>dari PredictionResult</td></tr>
+      <tr><td></td><td>anxietyScore</td><td>dari PredictionResult</td></tr>
+    </table>
+  </div>
+
+  
+  <div class="entity" id="e-ai" style="left:660px;top:800px;min-width:260px">
+    <div class="entity-header green">AIExplanation</div>
+    <table>
+      <tr><td><span class="fk">FK</span></td><td>session_id</td><td>→ UserInput</td></tr>
+      <tr><td></td><td>analisis</td><td>text (1 paragraf)</td></tr>
+      <tr><td></td><td>saran</td><td>text (3 poin)</td></tr>
+      <tr><td></td><td>penutup</td><td>text (1 kalimat)</td></tr>
+      <tr><td></td><td>max_words</td><td>170</td></tr>
+    </table>
+  </div>
+
+  
+  <div class="entity" id="e-api" style="left:660px;top:720px;min-width:260px;display:none"></div>
+
+  
+  <div class="zone-label" style="left:16px;top:8px">① Client Input</div>
+  <div class="zone-label" style="left:320px;top:118px">② Core Engine</div>
+  <div class="zone-label" style="left:660px;top:8px">③ ML Config &amp; Inference</div>
+  <div class="zone-label" style="left:16px;top:578px">④ IBM Granite AI</div>
+  <div class="zone-label" style="left:660px;top:508px">⑤ Prediksi Hasil</div>
+
+  
+  <svg class="lines" id="svg-lines">
+    <defs>
+      <marker id="arrow">
+        <path d="M0,0 L0,6 L8,3 z" fill="#3b82d4"></path>
+      </marker>
+      <marker id="arrow-purple">
+        <path d="M0,0 L0,6 L8,3 z" fill="#7c5cd8"></path>
+      </marker>
+      <marker id="arrow-red">
+        <path d="M0,0 L0,6 L8,3 z" fill="#cb2431"></path>
+      </marker>
+      <marker id="arrow-gray">
+        <path d="M0,0 L0,6 L8,3 z" fill="#b0b8c4"></path>
+      </marker>
+    </defs>
+
+    
+    <path d="M246,120 L320,200" class="arrow" stroke="#3b82d4" marker-end="url(#arrow)"></path>
+    <text x="256" y="160" class="card" fill="#3b82d4">1</text>
+    <text x="305" y="185" class="card" fill="#3b82d4">1</text>
+
+    
+    <path d="M246,320 C280,320 300,240 320,210" class="arrow" stroke="#1f8490" marker-end="url(#arrow)"></path>
+    <text x="248" y="278" class="card" fill="#1f8490">1</text>
+
+    
+    <path d="M130,195 L130,290" class="line-dashed" stroke="#b0b8c4" marker-end="url(#arrow-gray)"></path>
+    <text x="135" y="245" class="card">derived</text>
+
+    
+    <path d="M590,200 L660,310" class="arrow" stroke="#3b82d4" marker-end="url(#arrow)"></path>
+    <text x="590" y="245" class="card" fill="#3b82d4">1</text>
+    <text x="652" y="302" class="card" fill="#3b82d4">3</text>
+
+    
+    <path d="M790,130 L790,270" class="arrow" stroke="#b35a00" marker-end="url(#arrow)"></path>
+    <text x="795" y="200" class="card" fill="#b35a00">1:3</text>
+
+    
+    <path d="M720,365 C700,420 520,460 560,510" class="arrow" stroke="#7c5cd8" marker-end="url(#arrow-purple)"></path>
+    <text x="628" y="450" class="card" fill="#7c5cd8">3×1</text>
+
+    
+    <path d="M560,570 L660,580" class="arrow" stroke="#7c5cd8" marker-end="url(#arrow-purple)"></path>
+    <text x="582" y="568" class="card" fill="#7c5cd8">3 scores</text>
+
+    
+    <path d="M790,640 C790,700 620,730 590,760" class="arrow" stroke="#3b82d4" marker-end="url(#arrow)"></path>
+
+    
+    <path d="M130,200 C130,500 310,720 320,760" class="line-dashed" stroke="#57606a" marker-end="url(#arrow-gray)"></path>
+
+    
+    <path d="M246,660 L320,770" class="arrow" stroke="#cb2431" marker-end="url(#arrow-red)"></path>
+    <text x="248" y="720" class="card" fill="#cb2431">config</text>
+
+    
+    <path d="M590,800 L660,840" class="arrow" stroke="#cb2431" marker-end="url(#arrow-red)"></path>
+    <text x="598" y="827" class="card" fill="#cb2431">LLM call</text>
+
+    
+    <text x="340" y="460" class="card" fill="#57606a">∥ 3 parallel sessions</text>
+  </svg>
+
+</div>
+
+
+<div class="info-section">
+
+  <h2>Keterangan Entitas &amp; Alur Data</h2>
+  <div class="info-grid">
+
+    <div class="info-card">
+      <h3><span class="tag">Input</span> UserInput</h3>
+      <p>Data yang dikirim pengguna via form web (POST <code>/api/predict</code>). Menjadi sumber utama seluruh pipeline.</p>
+      <ul>
+        <li>gender: male / female</li>
+        <li>platform: Instagram, TikTok, X (Twitter), dll.</li>
+        <li>dailySocialMediaHours, sleepHours, stressLevel, physicalActivity</li>
+      </ul>
+    </div>
+
+    <div class="info-card">
+      <h3><span class="tag" style="background:#dcf2ec;color:#1f8490">Derived</span> SleepQualityMapping</h3>
+      <p>Utilitas <code>sleepMapper.js</code> mengonversi jam tidur ke skor kualitas tidur (1–10) menggunakan aturan berbasis ambang batas.</p>
+      <ul>
+        <li>Ideal 7–9 jam → skor 10</li>
+        <li>Penalti 1,5 poin/jam di bawah 7</li>
+        <li>Penalti 1,0 poin/jam di atas 9</li>
+      </ul>
+    </div>
+
+    <div class="info-card">
+      <h3><span class="tag">Engine</span> RawData</h3>
+      <p>Representasi internal setelah normalisasi nama kolom. Dihasilkan oleh <code>prediction.service.js</code> sebelum masuk ke preprocessing.</p>
+    </div>
+
+    <div class="info-card">
+      <h3><span class="tag orange">Config</span> PreprocessorConfig (JSON)</h3>
+      <p>Tiga file JSON yang diekspor dari pipeline Python (scikit-learn). Menyimpan statistik StandardScaler dan kategori OneHotEncoder sehingga Node.js dapat mereplikasi preprocessing tanpa scikit-learn.</p>
+      <ul>
+        <li><code>predict_happiness_config.json</code></li>
+        <li><code>predict_mental_health_config.json</code></li>
+        <li><code>predict_anxiety_config.json</code></li>
+      </ul>
+    </div>
+
+    <div class="info-card">
+      <h3><span class="tag">Engine</span> FeatureVector</h3>
+      <p>Array numerik bertipe <code>Float32Array</code> yang dihasilkan <code>preprocess.js</code>: StandardScaler pada fitur numerik, OneHotEncoding pada fitur kategorikal, lalu diurutkan sesuai <code>feature_names_out</code>.</p>
+    </div>
+
+    <div class="info-card">
+      <h3><span class="tag purple">Model</span> ONNXModel</h3>
+      <p>Tiga model XGBoost Regressor yang dilatih di Python dan diekspor ke format ONNX. Dieksekusi di Node.js menggunakan <code>onnxruntime-node</code> secara paralel (<code>Promise.all</code>).</p>
+      <ul>
+        <li><code>predict_happiness_model.onnx</code></li>
+        <li><code>predict_mental_health_model.onnx</code></li>
+        <li><code>predict_anxiety_model.onnx</code></li>
+      </ul>
+    </div>
+
+    <div class="info-card">
+      <h3><span class="tag green">Output</span> PredictionResult</h3>
+      <p>Tiga skor numerik hasil inferensi, masing-masing di-<em>clamp</em> ke rentang 1–10 oleh <code>clamp.js</code>.</p>
+      <ul>
+        <li><strong>happinessIndex</strong>: semakin tinggi semakin baik</li>
+        <li><strong>mentalHealthScore</strong>: semakin tinggi semakin baik</li>
+        <li><strong>anxietyScore</strong>: semakin tinggi = kecemasan makin tinggi</li>
+      </ul>
+    </div>
+
+    <div class="info-card">
+      <h3><span class="tag" style="background:#fee8e8;color:#cb2431">AI</span> Prompt &amp; IBMGraniteConfig</h3>
+      <p>Prompt terstruktur dibangun oleh <code>prompt.service.js</code> dari RawData + PredictionResult, lalu dikirim ke IBM Granite API oleh <code>watson.service.js</code> menggunakan <code>axios</code>.</p>
+    </div>
+
+    <div class="info-card">
+      <h3><span class="tag green">Output</span> AIExplanation</h3>
+      <p>Respons teks IBM Granite AI: <strong>Analisis</strong> (1 paragraf), <strong>Saran</strong> (3 poin aksi), dan <strong>Penutup</strong> (1 kalimat motivasi) — maks. 170 kata, Bahasa Indonesia.</p>
+    </div>
+
+  </div>
+
+  <h2 style="margin-top:28px">Ringkasan Alur Pipeline</h2>
+  <div class="info-grid" style="grid-template-columns:1fr">
+    <div class="info-card">
+      <table style="width:100%;border-collapse:collapse;font-size:12.5px">
+        <thead>
+          <tr style="border-bottom:1.5px solid #e5e7eb">
+            <th style="padding:6px 10px;text-align:left;color:#1f2328">Tahap</th>
+            <th style="padding:6px 10px;text-align:left;color:#1f2328">Komponen</th>
+            <th style="padding:6px 10px;text-align:left;color:#1f2328">File / Service</th>
+            <th style="padding:6px 10px;text-align:left;color:#1f2328">Output</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr style="border-bottom:1px solid #e5e7eb">
+            <td style="padding:5px 10px;color:#57606a">① HTTP POST</td>
+            <td style="padding:5px 10px">Express Router</td>
+            <td style="padding:5px 10px;font-family:monospace;font-size:11.5px">predict.routes.js → predict.controller.js</td>
+            <td style="padding:5px 10px;color:#57606a">req.body (UserInput)</td>
+          </tr>
+          <tr style="border-bottom:1px solid #e5e7eb;background:#f7f8fa">
+            <td style="padding:5px 10px;color:#57606a">② Mapping Tidur</td>
+            <td style="padding:5px 10px">sleepMapper</td>
+            <td style="padding:5px 10px;font-family:monospace;font-size:11.5px">utils/sleepMapper.js</td>
+            <td style="padding:5px 10px;color:#57606a">sleep_quality (1–10)</td>
+          </tr>
+          <tr style="border-bottom:1px solid #e5e7eb">
+            <td style="padding:5px 10px;color:#57606a">③ Preprocessing ×3</td>
+            <td style="padding:5px 10px">genericPreprocess</td>
+            <td style="padding:5px 10px;font-family:monospace;font-size:11.5px">utils/preprocess.js + models/*.js</td>
+            <td style="padding:5px 10px;color:#57606a">Float32Array per model</td>
+          </tr>
+          <tr style="border-bottom:1px solid #e5e7eb;background:#f7f8fa">
+            <td style="padding:5px 10px;color:#57606a">④ Inferensi ONNX ×3</td>
+            <td style="padding:5px 10px">ONNX Runtime</td>
+            <td style="padding:5px 10px;font-family:monospace;font-size:11.5px">utils/inference.js (Promise.all)</td>
+            <td style="padding:5px 10px;color:#57606a">3 raw scores</td>
+          </tr>
+          <tr style="border-bottom:1px solid #e5e7eb">
+            <td style="padding:5px 10px;color:#57606a">⑤ Clamp Skor</td>
+            <td style="padding:5px 10px">clamp</td>
+            <td style="padding:5px 10px;font-family:monospace;font-size:11.5px">utils/clamp.js</td>
+            <td style="padding:5px 10px;color:#57606a">PredictionResult (1–10)</td>
+          </tr>
+          <tr style="border-bottom:1px solid #e5e7eb;background:#f7f8fa">
+            <td style="padding:5px 10px;color:#57606a">⑥ Build Prompt</td>
+            <td style="padding:5px 10px">Prompt Engineering</td>
+            <td style="padding:5px 10px;font-family:monospace;font-size:11.5px">services/prompt.service.js</td>
+            <td style="padding:5px 10px;color:#57606a">Structured prompt string</td>
+          </tr>
+          <tr style="border-bottom:1px solid #e5e7eb">
+            <td style="padding:5px 10px;color:#57606a">⑦ IBM Granite Call</td>
+            <td style="padding:5px 10px">Watson / Granite API</td>
+            <td style="padding:5px 10px;font-family:monospace;font-size:11.5px">services/watson.service.js</td>
+            <td style="padding:5px 10px;color:#57606a">AIExplanation (text)</td>
+          </tr>
+          <tr style="background:#f7f8fa">
+            <td style="padding:5px 10px;color:#57606a">⑧ HTTP Response</td>
+            <td style="padding:5px 10px">Express Controller</td>
+            <td style="padding:5px 10px;font-family:monospace;font-size:11.5px">predict.controller.js</td>
+            <td style="padding:5px 10px;color:#57606a">{ success, results, explanation }</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<footer>Made with IBM Bob</footer>
+</body>
+</html>
